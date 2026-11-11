@@ -8,23 +8,42 @@ class InfoCard extends StatelessWidget {
   /// Isi kartu di bawah judul.
   final String content;
 
-  const InfoCard({super.key, required this.title, required this.content});
+  /// Jika `true`, isi tidak dipatah ke baris baru, melainkan diperkecil agar
+  /// muat. Cocok untuk angka seperti NPM yang tidak boleh terpotong.
+  final bool singleLine;
+
+  const InfoCard({
+    super.key,
+    required this.title,
+    required this.content,
+    this.singleLine = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       // Memberikan efek bayangan kartu elevasi 2 unit.
       elevation: 2.0,
+      // Lebar kartu ditentukan induknya (Expanded di MyHomePage).
       child: Container(
-        // Menyesuaikan lebar kartu dengan proporsi layar (dibagi 3.5).
-        width: MediaQuery.of(context).size.width / 3.5,
-        padding: const EdgeInsets.all(16.0),
-        // Menyusun teks title dan content secara vertikal.
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+        // Menyusun teks title dan content secara vertikal di tengah kartu.
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8.0),
-            Text(content),
+            if (singleLine)
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(content, maxLines: 1, softWrap: false),
+              )
+            else
+              Text(content, textAlign: TextAlign.center),
           ],
         ),
       ),

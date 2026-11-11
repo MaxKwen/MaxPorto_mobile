@@ -21,8 +21,16 @@ class MyHomePage extends StatelessWidget {
     ItemHomepage("Logout", Icons.logout, Colors.red.shade700),
   ];
 
+  /// Di bawah lebar ini (semua ponsel), grid memakai 2 kolom agar kata
+  /// panjang seperti "Achievements" tidak terpotong; tablet/desktop tetap 3.
+  static const double narrowScreenWidth = 480;
+
   @override
   Widget build(BuildContext context) {
+    final int columns = MediaQuery.sizeOf(context).width < narrowScreenWidth
+        ? 2
+        : 3;
+
     // Scaffold menyediakan struktur visual dasar halaman (AppBar, Body, SnackBar).
     return Scaffold(
       // AppBar menampilkan bar bagian atas halaman aplikasi.
@@ -33,20 +41,33 @@ class MyHomePage extends StatelessWidget {
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
-      // Body halaman utama dengan padding di sekelilingnya.
-      body: Padding(
+      // Body dapat di-scroll agar tidak overflow pada layar pendek.
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Baris horizontal untuk menampilkan 3 InfoCard secara sejajar.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                InfoCard(title: 'NPM', content: npm),
-                InfoCard(title: 'Name', content: nama),
-                InfoCard(title: 'Class', content: kelas),
-              ],
+            // Baris 3 InfoCard: Expanded membagi lebar rata tanpa melebihi
+            // layar, IntrinsicHeight + stretch menyamakan tinggi kartu.
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: InfoCard(
+                      title: 'NPM',
+                      content: npm,
+                      singleLine: true,
+                    ),
+                  ),
+                  Expanded(
+                    child: InfoCard(title: 'Name', content: nama),
+                  ),
+                  Expanded(
+                    child: InfoCard(title: 'Class', content: kelas),
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 16.0),
@@ -66,13 +87,14 @@ class MyHomePage extends StatelessWidget {
                     ),
                   ),
 
-                  // GridView menampilkan kartu tombol dalam tata letak kisi 3 kolom.
+                  // Grid tidak scroll sendiri; seluruh halaman yang di-scroll.
                   GridView.count(
-                    primary: true,
+                    primary: false,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(20),
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
-                    crossAxisCount: 3,
+                    crossAxisCount: columns,
                     // shrinkWrap agar ukuran kisi menyesuaikan tinggi konten anak.
                     shrinkWrap: true,
                     children: items.map((ItemHomepage item) {
