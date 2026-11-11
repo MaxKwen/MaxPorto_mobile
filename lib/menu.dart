@@ -8,9 +8,13 @@ class MyHomePage extends StatelessWidget {
   final String kelas = "PBP B";
 
   final List<ItemHomepage> items = [
-    ItemHomepage("Lihat Proyek", Icons.folder),
-    ItemHomepage("Tambah Proyek", Icons.add_circle),
-    ItemHomepage("Logout", Icons.logout),
+    // Menu mengikuti bagian portofolio MaxPorto; setiap tombol punya warna sendiri.
+    ItemHomepage("Lihat Experience", Icons.work, Colors.blue.shade700),
+    ItemHomepage("Lihat Projects", Icons.folder, Colors.deepPurple),
+    ItemHomepage("Lihat Achievements", Icons.emoji_events, Colors.brown),
+    ItemHomepage("Tambah Experience", Icons.add_circle, Colors.green.shade800),
+    ItemHomepage("Tambah Achievement", Icons.add_task, Colors.teal.shade700),
+    ItemHomepage("Logout", Icons.logout, Colors.red.shade700),
   ];
 
   @override
@@ -113,8 +117,10 @@ class InfoCard extends StatelessWidget {
 class ItemHomepage {
   final String name;
   final IconData icon;
+  // Warna latar kartu disimpan di model, jadi ItemCard tidak perlu if-else per tombol.
+  final Color color;
 
-  ItemHomepage(this.name, this.icon);
+  ItemHomepage(this.name, this.icon, this.color);
 }
 
 class ItemCard extends StatelessWidget {
@@ -125,8 +131,8 @@ class ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      // Menggunakan warna sekunder dari skema tema aplikasi.
-      color: Theme.of(context).colorScheme.secondary,
+      // Warna latar diambil dari model item.
+      color: item.color,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         // Aksi ketika kartu ditekan oleh pengguna.
