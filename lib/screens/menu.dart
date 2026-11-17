@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:maxporto_mobile/models/item_homepage.dart';
 import 'package:maxporto_mobile/widgets/info_card.dart';
-import 'package:maxporto_mobile/widgets/item_card.dart';
+import 'package:maxporto_mobile/widgets/left_drawer.dart';
+import 'package:maxporto_mobile/widgets/project_card.dart';
 
 /// Halaman utama: identitas pemilik dan menu aksi portofolio.
 class MyHomePage extends StatelessWidget {
@@ -17,6 +18,11 @@ class MyHomePage extends StatelessWidget {
     ItemHomepage("Lihat Projects", Icons.folder, Colors.deepPurple),
     ItemHomepage("Lihat Achievements", Icons.emoji_events, Colors.brown),
     ItemHomepage("Tambah Experience", Icons.add_circle, Colors.green.shade800),
+    ItemHomepage(
+      "Tambah Project",
+      Icons.create_new_folder,
+      Colors.orange.shade900,
+    ),
     ItemHomepage("Tambah Achievement", Icons.add_task, Colors.teal.shade700),
     ItemHomepage("Logout", Icons.logout, Colors.red.shade700),
   ];
@@ -40,7 +46,10 @@ class MyHomePage extends StatelessWidget {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
+        // Ikon hamburger drawer ikut berwarna putih seperti judul.
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
+      drawer: const LeftDrawer(),
       // Body dapat di-scroll agar tidak overflow pada layar pendek.
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

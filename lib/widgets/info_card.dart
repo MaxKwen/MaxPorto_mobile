@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Kartu identitas pemilik portofolio, misalnya NPM, nama, atau kelas.
 class InfoCard extends StatelessWidget {

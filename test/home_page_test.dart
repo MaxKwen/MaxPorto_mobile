@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:maxporto_mobile/main.dart';
-import 'package:maxporto_mobile/menu.dart';
+import 'package:maxporto_mobile/screens/menu.dart';
+import 'package:maxporto_mobile/screens/project_form.dart';
 import 'package:maxporto_mobile/models/item_homepage.dart';
 import 'package:maxporto_mobile/widgets/info_card.dart';
-import 'package:maxporto_mobile/widgets/item_card.dart';
+import 'package:maxporto_mobile/widgets/project_card.dart';
 
 /// Ukuran layar ponsel (logical pixel) agar tata letak sama seperti di perangkat.
 const Size phoneSize = Size(412, 915);
@@ -15,6 +16,7 @@ const List<String> expectedActions = [
   'Lihat Projects',
   'Lihat Achievements',
   'Tambah Experience',
+  'Tambah Project',
   'Tambah Achievement',
   'Logout',
 ];
@@ -55,7 +57,9 @@ void main() {
     expect(find.text('2406000001'), findsNothing);
   });
 
-  testWidgets('six action buttons appear in order with icons', (tester) async {
+  testWidgets('seven action buttons appear in order with icons', (
+    tester,
+  ) async {
     await pumpApp(tester);
 
     final items = tester
@@ -96,12 +100,22 @@ void main() {
     await pumpApp(tester);
 
     for (final name in expectedActions) {
+      // 7 tombol = 4 baris; scroll dulu agar kartu bawah (Logout) terlihat.
+      await tester.ensureVisible(find.widgetWithText(ItemCard, name));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ItemCard, name));
       // Tunggu animasi SnackBar lama keluar dan SnackBar baru masuk.
       await tester.pumpAndSettle();
       // hideCurrentSnackBar memastikan hanya pesan terbaru yang tampil.
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('Kamu telah menekan tombol $name!'), findsOneWidget);
+
+      // Tombol ini juga membuka form; kembali ke menu sebelum tombol berikutnya.
+      if (name == 'Tambah Project') {
+        expect(find.byType(ProjectFormPage), findsOneWidget);
+        Navigator.of(tester.element(find.byType(ProjectFormPage))).pop();
+        await tester.pumpAndSettle();
+      }
     }
   });
 

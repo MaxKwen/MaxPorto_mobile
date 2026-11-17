@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:maxporto_mobile/models/item_homepage.dart';
+import 'package:maxporto_mobile/screens/project_form.dart';
 
-/// Kartu tombol aksi berwarna yang menampilkan SnackBar saat ditekan.
+/// Kartu tombol aksi berwarna yang menampilkan SnackBar saat ditekan dan
+/// membuka halaman yang sesuai untuk tombol yang sudah punya halaman.
 class ItemCard extends StatelessWidget {
   /// Data tombol: label, ikon, dan warna latar.
   final ItemHomepage item;
@@ -25,6 +27,15 @@ class ItemCard extends StatelessWidget {
                 content: Text("Kamu telah menekan tombol ${item.name}!"),
               ),
             );
+
+          // push menumpuk halaman form di atas menu, sehingga tombol Back
+          // sistem/browser kembali ke halaman menu.
+          if (item.name == "Tambah Project") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProjectFormPage()),
+            );
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(8),
