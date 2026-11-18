@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:maxporto_mobile/models/item_homepage.dart';
+import 'package:maxporto_mobile/screens/experience_form.dart';
 import 'package:maxporto_mobile/screens/project_form.dart';
 
 /// Kartu tombol aksi berwarna yang menampilkan SnackBar saat ditekan dan
@@ -34,6 +35,13 @@ class ItemCard extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ProjectFormPage()),
+            );
+          } else if (item.name == "Tambah Experience") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ExperienceFormPage(),
+              ),
             );
           }
         },

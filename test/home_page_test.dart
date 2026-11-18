@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:maxporto_mobile/main.dart';
+import 'package:maxporto_mobile/screens/experience_form.dart';
 import 'package:maxporto_mobile/screens/menu.dart';
 import 'package:maxporto_mobile/screens/project_form.dart';
 import 'package:maxporto_mobile/models/item_homepage.dart';
@@ -110,10 +111,15 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('Kamu telah menekan tombol $name!'), findsOneWidget);
 
-      // Tombol ini juga membuka form; kembali ke menu sebelum tombol berikutnya.
-      if (name == 'Tambah Project') {
-        expect(find.byType(ProjectFormPage), findsOneWidget);
-        Navigator.of(tester.element(find.byType(ProjectFormPage))).pop();
+      // Tombol tambah membuka form; kembali ke menu sebelum tombol berikutnya.
+      final forms = <String, Type>{
+        'Tambah Project': ProjectFormPage,
+        'Tambah Experience': ExperienceFormPage,
+      };
+      if (forms.containsKey(name)) {
+        final page = find.byType(forms[name]!);
+        expect(page, findsOneWidget);
+        Navigator.of(tester.element(page)).pop();
         await tester.pumpAndSettle();
       }
     }
