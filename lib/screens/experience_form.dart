@@ -130,7 +130,9 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
         // Seluruh form dapat di-scroll, sehingga field dan tombol Simpan tetap
         // terjangkau di layar sempit atau saat keyboard muncul.
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(8.0),
+          // Ruang ekstra di bawah agar tombol Simpan bisa digulir ke atas
+          // SnackBar dari kartu aksi yang menutupi bagian bawah layar sempit.
+          padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 80.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
