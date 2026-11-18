@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:maxporto_mobile/validators/experience_validators.dart';
+import 'package:maxporto_mobile/widgets/left_drawer.dart';
 
 /// Halaman form untuk menambahkan pengalaman (Experience) ke portofolio.
 ///
@@ -122,6 +123,8 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+      // Drawer yang sama dengan halaman utama dan form proyek.
+      drawer: const LeftDrawer(),
       body: Form(
         key: _formKey,
         // Seluruh form dapat di-scroll, sehingga field dan tombol Simpan tetap
