@@ -4,10 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:maxporto_mobile/main.dart';
 import 'package:maxporto_mobile/screens/experience_form.dart';
 import 'package:maxporto_mobile/screens/menu.dart';
-import 'package:maxporto_mobile/screens/project_form.dart';
+import 'package:maxporto_mobile/screens/login_screen.dart';
+import 'package:maxporto_mobile/screens/project_list_screen.dart';
 import 'package:maxporto_mobile/models/item_homepage.dart';
 import 'package:maxporto_mobile/widgets/info_card.dart';
 import 'package:maxporto_mobile/widgets/project_card.dart';
+
+import 'support/fake_backend.dart' show FakeBackend;
 
 /// Ukuran layar ponsel (logical pixel) agar tata letak sama seperti di perangkat.
 const Size phoneSize = Size(412, 915);
@@ -26,7 +29,7 @@ Future<void> pumpApp(WidgetTester tester) async {
   tester.view.physicalSize = phoneSize;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(const MyApp());
+  await tester.pumpWidget(MyApp(apiClient: FakeBackend().apiClient));
 }
 
 void main() {
@@ -109,15 +112,21 @@ void main() {
       await tester.pumpAndSettle();
       // hideCurrentSnackBar memastikan hanya pesan terbaru yang tampil.
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('Kamu telah menekan tombol $name!'), findsOneWidget);
+      // Logout tanpa sesi menggantikan pesan umum dengan "belum login".
+      final message = name == 'Logout'
+          ? 'Kamu belum login.'
+          : 'Kamu telah menekan tombol $name!';
+      expect(find.text(message), findsOneWidget);
 
-      // Tombol tambah membuka form; kembali ke menu sebelum tombol berikutnya.
-      final forms = <String, Type>{
-        'Tambah Project': ProjectFormPage,
+      // Tombol yang membuka halaman; kembali ke menu sebelum tombol berikutnya.
+      // Tambah Project terproteksi, jadi tamu diarahkan ke LoginScreen.
+      final pages = <String, Type>{
+        'Lihat Projects': ProjectListScreen,
+        'Tambah Project': LoginScreen,
         'Tambah Experience': ExperienceFormPage,
       };
-      if (forms.containsKey(name)) {
-        final page = find.byType(forms[name]!);
+      if (pages.containsKey(name)) {
+        final page = find.byType(pages[name]!);
         expect(page, findsOneWidget);
         Navigator.of(tester.element(page)).pop();
         await tester.pumpAndSettle();
@@ -137,7 +146,7 @@ void main() {
     for (final entry in cases.entries) {
       tester.view.physicalSize = entry.key;
       tester.view.devicePixelRatio = 1.0;
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(MyApp(apiClient: FakeBackend().apiClient));
       await tester.pumpAndSettle();
       // Overflow akan tercatat sebagai exception dan menggagalkan test.
       expect(tester.takeException(), isNull, reason: '${entry.key}');

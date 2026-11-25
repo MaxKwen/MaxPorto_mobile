@@ -1,60 +1,54 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'dart:convert';
 
-import 'package:maxporto_mobile/main.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'package:maxporto_mobile/screens/login_screen.dart';
 import 'package:maxporto_mobile/screens/menu.dart';
 import 'package:maxporto_mobile/screens/project_form.dart';
 import 'package:maxporto_mobile/widgets/left_drawer.dart';
 import 'package:maxporto_mobile/widgets/project_card.dart';
 
-/// Ukuran layar ponsel (logical pixel) agar tata letak sama seperti di perangkat.
-const Size phoneSize = Size(412, 915);
-
-Future<void> pumpApp(WidgetTester tester) async {
-  tester.view.physicalSize = phoneSize;
-  tester.view.devicePixelRatio = 1.0;
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(const MyApp());
-}
-
-Future<void> openDrawer(WidgetTester tester) async {
-  // Font test (setiap huruf berupa kotak selebar ukuran font) jauh lebih lebar
-  // dari Roboto, sehingga teks DrawerHeader tutorial terbungkus berlebihan dan
-  // overflow hanya di test. Perkecil skala teks agar setara tampilan asli.
-  tester.platformDispatcher.textScaleFactorTestValue = 0.5;
-  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-  tester.state<ScaffoldState>(find.byType(Scaffold).last).openDrawer();
-  await tester.pumpAndSettle();
-}
+import 'support/fake_backend.dart';
 
 /// Navigator milik halaman yang sedang tampil, untuk memeriksa isi stack.
 NavigatorState navigatorOf(WidgetTester tester, Finder page) {
   return Navigator.of(tester.element(page));
 }
 
-Future<void> openFormFromMenu(WidgetTester tester) async {
-  await tester.tap(find.widgetWithText(ItemCard, 'Tambah Project'));
+Future<void> tapCard(WidgetTester tester, String name) async {
+  final card = find.widgetWithText(ItemCard, name);
+  await tester.ensureVisible(card);
+  await tester.pumpAndSettle();
+  await tester.tap(card);
   await tester.pumpAndSettle();
 }
 
-/// Hint dan label "Nama Proyek" sama, jadi ambil satu teks saja agar field
-/// yang sama tidak terhitung dua kali.
-Finder field(String label) => find.ancestor(
-  of: find.text(label).first,
-  matching: find.byType(TextFormField),
-);
-
 Future<void> tapSave(WidgetTester tester) async {
   await tester.ensureVisible(find.text('Save'));
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Save'));
   await tester.pumpAndSettle();
 }
 
+/// Login lewat kartu Tambah Project sehingga form terbuka dengan token aktif.
+Future<FakeBackend> openFormLoggedIn(WidgetTester tester) async {
+  final backend = await pumpApp(tester);
+  await tapCard(tester, 'Tambah Project');
+  await submitLogin(tester);
+  return backend;
+}
+
+Future<void> fillValidProject(WidgetTester tester) async {
+  await tester.enterText(field('Title'), ' TempoBIS ');
+  await tester.enterText(field('Description'), 'Pengenal BISINDO');
+  await tester.enterText(field('Tech Stack'), 'Python, MediaPipe');
+  await tester.enterText(field('Project URL'), 'https://example.com/tempobis');
+}
+
 void main() {
   group('LeftDrawer', () {
-    testWidgets('home page drawer shows header and both routes', (
-      tester,
-    ) async {
+    testWidgets('header, semua rute, dan opsi Login saat tamu', (tester) async {
       await pumpApp(tester);
       await openDrawer(tester);
 
@@ -64,17 +58,40 @@ void main() {
         find.text('Explore personal projects and experiences!'),
         findsOneWidget,
       );
-      expect(find.widgetWithText(ListTile, 'Home'), findsOneWidget);
-      expect(find.widgetWithText(ListTile, 'Add Project'), findsOneWidget);
+      for (final label in [
+        'Home',
+        'Projects',
+        'Add Project',
+        'Add Experience',
+        'Login',
+      ]) {
+        expect(
+          find.widgetWithText(ListTile, label),
+          findsOneWidget,
+          reason: label,
+        );
+      }
+      expect(find.widgetWithText(ListTile, 'Logout'), findsNothing);
     });
 
-    testWidgets('Add Project replaces the menu instead of stacking on it', (
+    testWidgets('Add Project tanpa login membuka LoginScreen', (tester) async {
+      await pumpApp(tester);
+      await openDrawer(tester);
+      await tester.tap(find.widgetWithText(ListTile, 'Add Project'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(ProjectFormPage), findsNothing);
+    });
+
+    testWidgets('setelah login, Add Project menggantikan menu dengan form', (
       tester,
     ) async {
       await pumpApp(tester);
       await openDrawer(tester);
       await tester.tap(find.widgetWithText(ListTile, 'Add Project'));
       await tester.pumpAndSettle();
+      await submitLogin(tester);
 
       expect(find.byType(ProjectFormPage), findsOneWidget);
       expect(find.byType(MyHomePage), findsNothing);
@@ -85,12 +102,33 @@ void main() {
       );
     });
 
-    testWidgets('Home on the form drawer returns to the menu', (tester) async {
-      await pumpApp(tester);
+    testWidgets('drawer menampilkan Logout setelah login, lalu Login lagi', (
+      tester,
+    ) async {
+      final backend = await pumpApp(tester);
       await openDrawer(tester);
-      await tester.tap(find.widgetWithText(ListTile, 'Add Project'));
+      await tester.tap(find.widgetWithText(ListTile, 'Login'));
       await tester.pumpAndSettle();
+      await submitLogin(tester);
 
+      // LoginScreen di-pop dengan hasil true; drawer kembali terlihat.
+      expect(find.byType(LoginScreen), findsNothing);
+      expect(find.widgetWithText(ListTile, 'Logout'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ListTile, 'Logout'));
+      await tester.pumpAndSettle();
+      expect(find.text('Kamu telah logout.'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'Login'), findsOneWidget);
+      expect(backend.activeToken, isNull);
+      expect(
+        backend.requests.last.url.path,
+        '/api/v1/auth/logout/',
+        reason: 'logout harus mencabut token di server',
+      );
+    });
+
+    testWidgets('Home dari drawer form kembali ke menu', (tester) async {
+      await openFormLoggedIn(tester);
       await openDrawer(tester);
       await tester.tap(find.widgetWithText(ListTile, 'Home'));
       await tester.pumpAndSettle();
@@ -100,12 +138,11 @@ void main() {
     });
   });
 
-  group('Tambah Project button', () {
-    testWidgets('pushes the form on top of the menu, Back returns', (
+  group('Kartu Tambah Project', () {
+    testWidgets('login lalu push form di atas menu, Back kembali', (
       tester,
     ) async {
-      await pumpApp(tester);
-      await openFormFromMenu(tester);
+      await openFormLoggedIn(tester);
 
       expect(find.byType(ProjectFormPage), findsOneWidget);
       expect(find.text('Add Project Form'), findsOneWidget);
@@ -116,104 +153,128 @@ void main() {
       navigator.pop();
       await tester.pumpAndSettle();
       expect(find.byType(MyHomePage), findsOneWidget);
-      expect(find.byType(ProjectFormPage), findsNothing);
     });
 
-    testWidgets('other buttons stay on the menu', (tester) async {
-      await pumpApp(tester);
-      await tester.tap(find.widgetWithText(ItemCard, 'Lihat Projects'));
+    testWidgets('sudah login: kartu langsung membuka form', (tester) async {
+      await openFormLoggedIn(tester);
+      navigatorOf(tester, find.byType(ProjectFormPage)).pop();
       await tester.pumpAndSettle();
 
-      expect(find.byType(ProjectFormPage), findsNothing);
+      await tapCard(tester, 'Tambah Project');
+      expect(find.byType(LoginScreen), findsNothing);
+      expect(find.byType(ProjectFormPage), findsOneWidget);
+    });
+
+    testWidgets('Back dari LoginScreen membatalkan dan tetap di menu', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await tapCard(tester, 'Tambah Project');
+      navigatorOf(tester, find.byType(LoginScreen)).pop();
+      await tester.pumpAndSettle();
+
       expect(find.byType(MyHomePage), findsOneWidget);
+      expect(find.byType(ProjectFormPage), findsNothing);
     });
   });
 
   group('ProjectFormPage', () {
-    testWidgets('has all inputs, the drawer, and the default category', (
-      tester,
-    ) async {
-      await pumpApp(tester);
-      await openFormFromMenu(tester);
+    testWidgets('field mengikuti ProjectSerializer', (tester) async {
+      await openFormLoggedIn(tester);
 
-      expect(field('Nama Proyek'), findsOneWidget);
-      expect(field('Deskripsi Proyek'), findsOneWidget);
-      expect(field('Teknologi yang Digunakan'), findsOneWidget);
-      expect(field('Tautan Proyek'), findsOneWidget);
-      expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
-      expect(find.text('Web Development'), findsWidgets);
+      for (final label in [
+        'Title',
+        'Description',
+        'Tech Stack',
+        'Project URL',
+        'Project Image URL (Optional)',
+      ]) {
+        expect(field(label), findsOneWidget, reason: label);
+      }
       expect(find.text('Save'), findsOneWidget);
-
       await openDrawer(tester);
       expect(find.byType(LeftDrawer), findsOneWidget);
     });
 
-    testWidgets('empty required fields show errors and no dialog', (
+    testWidgets('isian wajib kosong/spasi ditolak tanpa request', (
       tester,
     ) async {
-      await pumpApp(tester);
-      await openFormFromMenu(tester);
+      final backend = await openFormLoggedIn(tester);
+      final before = backend.requests.length;
+      await tester.enterText(field('Title'), '   ');
       await tapSave(tester);
 
-      expect(find.text('Nama proyek tidak boleh kosong!'), findsOneWidget);
-      expect(find.text('Deskripsi proyek tidak boleh kosong!'), findsOneWidget);
+      expect(find.text('Title tidak boleh kosong!'), findsOneWidget);
+      expect(find.text('Description tidak boleh kosong!'), findsOneWidget);
+      expect(find.text('Tech Stack tidak boleh kosong!'), findsOneWidget);
       expect(find.byType(AlertDialog), findsNothing);
+      expect(backend.requests.length, before);
     });
 
-    testWidgets('whitespace-only input is rejected', (tester) async {
-      await pumpApp(tester);
-      await openFormFromMenu(tester);
-      await tester.enterText(field('Nama Proyek'), '   ');
-      await tester.enterText(field('Deskripsi Proyek'), 'Ada isinya');
-      await tapSave(tester);
-
-      expect(find.text('Nama proyek tidak boleh kosong!'), findsOneWidget);
-      expect(find.text('Deskripsi proyek tidak boleh kosong!'), findsNothing);
-      expect(find.byType(AlertDialog), findsNothing);
-    });
-
-    testWidgets('valid form shows every value in the dialog, OK resets', (
-      tester,
-    ) async {
-      await pumpApp(tester);
-      await openFormFromMenu(tester);
-
-      await tester.enterText(field('Nama Proyek'), 'TempoBIS');
-      await tester.enterText(field('Deskripsi Proyek'), 'Pengenal BISINDO');
-      await tester.tap(find.byType(DropdownButtonFormField<String>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Machine Learning').last);
-      await tester.pumpAndSettle();
+    testWidgets('URL tidak valid ditolak', (tester) async {
+      await openFormLoggedIn(tester);
+      await fillValidProject(tester);
+      await tester.enterText(field('Project URL'), 'github.com/tanpa-skema');
       await tester.enterText(
-        field('Teknologi yang Digunakan'),
-        'Python, MediaPipe',
+        field('Project Image URL (Optional)'),
+        'ftp://x.com/a.png',
       );
-      await tester.enterText(field('Tautan Proyek'), 'https://example.com');
       await tapSave(tester);
+
+      expect(
+        find.text('Masukkan URL yang valid (diawali http:// atau https://).'),
+        findsNWidgets(2),
+      );
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('input valid dikirim dengan token, dialog setelah 201', (
+      tester,
+    ) async {
+      final backend = await openFormLoggedIn(tester);
+      await fillValidProject(tester);
+      await tapSave(tester);
+
+      final request = backend.requests.last;
+      expect(request.method, 'POST');
+      expect(request.url.path, '/api/v1/projects/');
+      expect(
+        request.headers['Authorization'],
+        'Token ${FakeBackend.validToken}',
+      );
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      // id dibuat server, jadi tidak ikut dikirim; nilai sudah di-trim.
+      expect(body, {
+        'title': 'TempoBIS',
+        'description': 'Pengenal BISINDO',
+        'category': 'Python, MediaPipe',
+        'project_url': 'https://example.com/tempobis',
+        'thumbnail': '',
+      });
 
       final dialog = find.byType(AlertDialog);
       expect(dialog, findsOneWidget);
       expect(find.text('Proyek berhasil ditambahkan!'), findsOneWidget);
-      for (final line in [
-        'Nama Proyek: TempoBIS',
-        'Deskripsi: Pengenal BISINDO',
-        'Kategori: Machine Learning',
-        'Teknologi: Python, MediaPipe',
-        'Tautan: https://example.com',
-      ]) {
-        expect(
-          find.descendant(of: dialog, matching: find.text(line)),
-          findsOneWidget,
-        );
-      }
-
+      expect(
+        find.descendant(of: dialog, matching: find.text('ID: 2')),
+        findsOneWidget,
+      );
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog), findsNothing);
-      // Form di-reset: isian teks kembali kosong, form tetap tampil.
-      expect(find.byType(ProjectFormPage), findsOneWidget);
-      expect(find.text('TempoBIS'), findsNothing);
-      expect(find.text('Pengenal BISINDO'), findsNothing);
+    });
+
+    testWidgets('token dicabut di server: logout lalu minta login ulang', (
+      tester,
+    ) async {
+      final backend = await openFormLoggedIn(tester);
+      backend.activeToken = 'token-lain'; // token aplikasi jadi tidak valid
+      await fillValidProject(tester);
+      await tapSave(tester);
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.text('Sesi berakhir, silakan login ulang.'), findsOneWidget);
     });
   });
 }

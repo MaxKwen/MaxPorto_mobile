@@ -7,6 +7,8 @@ import 'package:maxporto_mobile/screens/menu.dart';
 import 'package:maxporto_mobile/widgets/left_drawer.dart';
 import 'package:maxporto_mobile/widgets/project_card.dart';
 
+import 'support/fake_backend.dart' show FakeBackend;
+
 /// Ukuran layar ponsel (logical pixel) agar tata letak sama seperti di perangkat.
 const Size phoneSize = Size(412, 915);
 
@@ -14,7 +16,7 @@ Future<void> pumpApp(WidgetTester tester, {Size size = phoneSize}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(const MyApp());
+  await tester.pumpWidget(MyApp(apiClient: FakeBackend().apiClient));
 }
 
 Future<void> openDrawer(WidgetTester tester) async {
